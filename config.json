@@ -13,7 +13,7 @@
     {
         "en-US":
         {
-            "name": "JourneyTrigger",
+            "name": "Sayan_JourneyCA",
             "description": "An activity that helps you trigger a journey from another journey.",
             "step1Label": "Configure Activity"
         }
