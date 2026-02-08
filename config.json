@@ -1,81 +1,38 @@
 {
     "workflowApiVersion": "1.1",
-    "metaData":
-    {
+    "key": "af850a11-4c0f-4091-a25e-3e619f27070e",
+    "metaData": {
         "icon": "images/icon.png",
         "iconSmall": "images/iconSmall.png",
         "backgroundColor": "#9f8e69",
         "category": "Custom"
     },
-
     "type": "REST",
-    "lang":
-    {
-        "en-US":
-        {
+    "lang": {
+        "en-US": {
             "name": "Sayan_JourneyCA",
             "description": "An activity that helps you trigger a journey from another journey.",
             "step1Label": "Configure Activity"
         }
     },
-
-      "arguments": {
+    "arguments": {
         "execute": {
-          "inArguments": [
-            {
-            }
-          ],
-          "outArguments": [
-          ],
-          "url": "https://customactivity1.netlify.app/journeybuilder/execute"
-        }
-      },
-    
-    "configurationArguments":
-    {
-        "applicationExtensionKey": "",
-        "save":
-        {
-            "url": "https://customactivity1.netlify.app/journeybuilder/save",
-            "verb": "POST"
-        },
-        "publish":
-        {
-            "url": "https://customactivity1.netlify.app/journeybuilder/publish",
-            "verb": "POST"
-        },
-        "stop":
-        {
-            "url": "https://customactivity1.netlify.app/journeybuilder/stop",
-            "verb": "POST"
-        },
-        "validate":
-        {
-            "url": "https://customactivity1.netlify.app/journeybuilder/validate",
-            "verb": "POST"
+            "inArguments": [],
+            "outArguments": [],
+            "url": "https://customactivity1.netlify.app/journeybuilder/execute"
         }
     },
-    "userInterfaces":
-    {
-        "configModal": {
+    "configurationArguments": {
+        "applicationExtensionKey": "af850a11-4c0f-4091-a25e-3e619f27070e",
+        "save": { "url": "https://customactivity1.netlify.app/journeybuilder/save", "verb": "POST" },
+        "publish": { "url": "https://customactivity1.netlify.app/journeybuilder/publish", "verb": "POST" },
+        "validate": { "url": "https://customactivity1.netlify.app/journeybuilder/validate", "verb": "POST" }
+    },
+    "userInterfaces": {
+        "configInspector": {
+            "url": "index.html",
             "height": 500,
-            "width": 500,
-            "fullscreen": false
-        },
-        "runningModal": {
-            "url": "runningModal.html"
-        },
-        "runningHover": {
-            "url": "runningHover.html"
-        }
-    },
-    "schema": 
-    {
-        "arguments":{
-            "execute": {
-                "inArguments": [],
-                "outArguments": []
-            }
+            "width": 500
         }
     }
 }
