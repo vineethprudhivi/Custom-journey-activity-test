@@ -16,11 +16,15 @@
         }
     },
     "arguments": {
-        "execute": {
-            "inArguments": [],
-            "outArguments": [],
-            "url": "https://custom-journey-activity-test.vercel.app/execute"
-        }
+    "execute": {
+        "inArguments": [
+            { "id": "{{Event.DE1_Vineeth.id}}" },
+            { "fname": "{{Event.DE1_Vineeth.fname}}" },
+            { "lname": "{{Event.DE1_Vineeth.lname}}" },
+            { "email": "{{Event.DE1_Vineeth.email}}" }
+        ],
+        "url": "https://custom-journey-activity-test.vercel.app/execute"
+     }
     },
     "configurationArguments": {
         "applicationExtensionKey": "b43b4e9f-6ebd-4f4c-9649-38bb36b7124b",
