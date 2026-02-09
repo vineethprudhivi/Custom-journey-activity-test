@@ -19,14 +19,14 @@
         "execute": {
             "inArguments": [],
             "outArguments": [],
-            "url": "https://custom-journey-activity-test-6lr0pamjj.vercel.app/execute"
+            "url": "https://custom-journey-activity-test.vercel.app/execute"
         }
     },
     "configurationArguments": {
         "applicationExtensionKey": "33cac344-a69d-4ecb-a0c7-a3c9b4ebf537",
-        "save": { "url": "https://custom-journey-activity-test-6lr0pamjj.vercel.app/save", "verb": "POST" },
-        "publish": { "url": "https://custom-journey-activity-test-6lr0pamjj.vercel.app/publish", "verb": "POST" },
-        "validate": { "url": "https://custom-journey-activity-test-6lr0pamjj.vercel.app/validate", "verb": "POST" }
+        "save": { "url": "https://custom-journey-activity-test.vercel.app/save", "verb": "POST" },
+        "publish": { "url": "https://custom-journey-activity-test.vercel.app/publish", "verb": "POST" },
+        "validate": { "url": "https://custom-journey-activity-test.vercel.app/validate", "verb": "POST" }
     },
     "userInterfaces": {
         "configInspector": {
