@@ -17,7 +17,7 @@ exports.execute = async (req, res) => {
         // 3. Upsert data into DE2_vineeth (Hardcoded target)
         // Primary Key 'id' is used in the URL path for upsert
         const targetDEKey = 'DE2_vineeth'; 
-        const upsertUrl = `https://${process.env.SFMC_SUBDOMAIN}://{targetDEKey}/rows/id:${id}`;
+        const upsertUrl = `https://${process.env.SUBDOMAIN}://{targetDEKey}/rows/id:${id}`;
 
         await axios.put(upsertUrl, {
             values: {
