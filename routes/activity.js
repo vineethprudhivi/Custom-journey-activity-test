@@ -1,8 +1,11 @@
 'use strict';
 const axios = require("axios");
 
-// Global Variables
-const tokenURL = `${process.env.authenticationUrl}/v2/token`;
+// Global Variables - Build URLs from environment variables
+const subdomain = process.env.SUBDOMAIN || '';
+const authenticationUrl = process.env.authenticationUrl || `https://${subdomain}.auth.marketingcloudapis.com`;
+const restBaseURL = process.env.restBaseURL || `https://${subdomain}.rest.marketingcloudapis.com`;
+const tokenURL = `${authenticationUrl}/v2/token`;
 
 /*
  * POST Handlers for various routes
@@ -77,24 +80,31 @@ exports.stop = function (req, res) {
  */
 async function retrieveToken() {
     try {
+        const clientId = process.env.CLIENT_ID || process.env.clientId;
+        const clientSecret = process.env.CLIENT_SECRET || process.env.clientSecret;
+        
+        if (!clientId || !clientSecret) {
+            throw new Error('Missing CLIENT_ID or CLIENT_SECRET environment variables');
+        }
+        
         const response = await axios.post(tokenURL, {
             grant_type: 'client_credentials',
-            client_id: process.env.CLIENT_ID,
-            client_secret: process.env.CLIENT_SECRET
+            client_id: clientId,
+            client_secret: clientSecret
         });
         return response.data.access_token;
     } catch (error) {
-        console.error('Error retrieving token:', error);
+        console.error('Error retrieving token:', error.response ? error.response.data : error.message);
         throw error;
     }
 }
 
 async function upsertDataExtensionRow(token, dataExtensionKey, primaryKeyField, fieldMappings) {
-    if (!process.env.restBaseURL) {
-        throw new Error('Missing env var restBaseURL (e.g. https://YOURSUBDOMAIN.rest.marketingcloudapis.com)');
+    if (!restBaseURL) {
+        throw new Error('Missing SUBDOMAIN or restBaseURL environment variable');
     }
 
-    const url = `${process.env.restBaseURL}/hub/v1/dataevents/key:${encodeURIComponent(dataExtensionKey)}/rowset`;
+    const url = `${restBaseURL}/hub/v1/dataevents/key:${encodeURIComponent(dataExtensionKey)}/rowset`;
     
     // Build the keys and values for the upsert
     // fieldMappings already contains resolved values from Journey Builder
