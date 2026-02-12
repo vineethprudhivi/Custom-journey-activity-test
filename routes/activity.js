@@ -27,11 +27,18 @@ exports.save = async function (req, res) {
 
 exports.execute = async function (req, res) {
     try {
+        console.log('=== Execute called ===');
+        console.log('Request body:', JSON.stringify(req.body, null, 2));
+        
         const args = (req.body && req.body.inArguments && req.body.inArguments[0]) ? req.body.inArguments[0] : {};
 
         const destinationDE = (args.destinationDE || process.env.TARGET_DE_KEY || '').trim();
         const upsertKey = args.upsertKey || 'id';
         const fieldMappings = (args.fieldMappings && typeof args.fieldMappings === 'object') ? args.fieldMappings : {};
+
+        console.log('Destination DE:', destinationDE);
+        console.log('Upsert Key:', upsertKey);
+        console.log('Field Mappings:', JSON.stringify(fieldMappings, null, 2));
 
         if (!destinationDE) {
             console.error('Execute error: missing destinationDE (set in UI or env TARGET_DE_KEY)');
