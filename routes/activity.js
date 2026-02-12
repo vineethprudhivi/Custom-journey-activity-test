@@ -1,7 +1,5 @@
 'use strict';
 const axios = require("axios");
-const util = require('util');
-const { Client } = require('pg');
 
 // Global Variables
 const tokenURL = `${process.env.authenticationUrl}/v2/token`;
@@ -10,75 +8,68 @@ const tokenURL = `${process.env.authenticationUrl}/v2/token`;
  * POST Handlers for various routes
  */
 exports.edit = function (req, res) {
-    res.status(200).send('Edit');
+    res.status(200).json({ success: true });
 };
 
 exports.save = async function (req, res) {
     try {
         const payload = req.body;
         await saveToDatabase(payload);
-        res.status(200).send('Save');
+        res.status(200).json({ success: true });
     } catch (error) {
         console.error('Error saving data:', error);
-        res.status(500).send('Error saving data');
+        res.status(500).json({ success: false, error: 'Error saving data' });
     }
 };
 
 exports.execute = async function (req, res) {
     try {
+        const args = (req.body && req.body.inArguments && req.body.inArguments[0]) ? req.body.inArguments[0] : {};
 
-        const inArguments = req.body.inArguments[0];
-        const contactKey = inArguments.contactKey;
-        const APIEventKey = inArguments.selectedJourneyAPIEventKey;
-        const data = inArguments.payload;
-        const uuid = inArguments.uuid;
+        const destinationDE = (args.destinationDE || process.env.TARGET_DE_KEY || '').trim();
+        const upsertKey = args.upsertKey || 'id';
+        const fieldMappings = (args.fieldMappings && typeof args.fieldMappings === 'object') ? args.fieldMappings : {};
 
-        const token = await retrieveToken();
-        const response = await triggerJourney(token, contactKey, APIEventKey, data);
-
-        const responsePayload = {
-            uuid: uuid,
-            contactKey: contactKey,
-            triggerDate: new Date(),
-            status: response.status,
-            errorLog: response.error ? response.error.message : null
-        };
-
-        await saveToDatabase(responsePayload);
-
-        res.status(200).send('Execute');
-    } catch (error) {
-        console.error('Error executing journey:', error);
-
-        const responsePayload = {
-            uuid: req.body.inArguments[0].uuid,
-            contactKey: req.body.inArguments[0].contactKey,
-            triggerDate: new Date(),
-            status: 'Error',
-            errorLog: error.message
-        };
-
-        try {
-            await saveToDatabase(responsePayload);
-        } catch (dbError) {
-            console.error('Error saving error log to database:', dbError);
+        if (!destinationDE) {
+            console.error('Execute error: missing destinationDE (set in UI or env TARGET_DE_KEY)');
+            return res.status(200).json({ success: false, error: 'Missing destinationDE' });
+        }
+        
+        if (Object.keys(fieldMappings).length === 0) {
+            console.error('Execute error: no fields selected for upsert');
+            return res.status(200).json({ success: false, error: 'No fields selected' });
         }
 
-        res.status(200).send('Execute'); // Ensure the journey continues
+        // Journey Builder will have already resolved {{...}} templates into actual values
+        const primaryKeyValue = fieldMappings[upsertKey];
+        
+        if (!primaryKeyValue) {
+            console.error(`Execute error: upsert key '${upsertKey}' not found in field mappings`);
+            return res.status(200).json({ success: false, error: 'Upsert key not found' });
+        }
+
+        const token = await retrieveToken();
+        await upsertDataExtensionRow(token, destinationDE, upsertKey, fieldMappings);
+
+        console.log(`Successfully upserted row into DE '${destinationDE}' with ${upsertKey}=${primaryKeyValue}`);
+        return res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error during DE upsert execution:', error.response ? error.response.data : error.message);
+        return res.status(200).json({ success: false }); // Do not stop the journey
     }
 };
 
 
 exports.publish = function (req, res) {
-    res.status(200).send('Publish');
+    res.status(200).json({ success: true });
 };
 
 exports.validate = function (req, res) {
-    res.status(200).send('Validate');
+    res.status(200).json({ success: true });
 };
 
 exports.stop = function (req, res) {
-    res.status(200).send('Stop');
+    res.status(200).json({ success: true });
 };
 
 /*
@@ -88,8 +79,8 @@ async function retrieveToken() {
     try {
         const response = await axios.post(tokenURL, {
             grant_type: 'client_credentials',
-            client_id: process.env.clientId,
-            client_secret: process.env.clientSecret
+            client_id: process.env.CLIENT_ID,
+            client_secret: process.env.CLIENT_SECRET
         });
         return response.data.access_token;
     } catch (error) {
@@ -98,131 +89,61 @@ async function retrieveToken() {
     }
 }
 
-/*
- * Function to trigger a journey
- */
-async function triggerJourney(token, contactKey, APIEventKey, data) {
-    const triggerUrl = `${process.env.restBaseURL}/interaction/v1/events`;
-    const eventPayload = {
-        ContactKey: contactKey,
-        EventDefinitionKey: APIEventKey,
-        Data: data
-    };
-    try {
-        const response = await axios.post(triggerUrl, eventPayload, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        return { status: 'Success', error: null };
-    } catch (error) {
-        console.error('Error triggering journey:', error);
-        return { status: 'Error', error: error };
+async function upsertDataExtensionRow(token, dataExtensionKey, primaryKeyField, fieldMappings) {
+    if (!process.env.restBaseURL) {
+        throw new Error('Missing env var restBaseURL (e.g. https://YOURSUBDOMAIN.rest.marketingcloudapis.com)');
     }
+
+    const url = `${process.env.restBaseURL}/hub/v1/dataevents/key:${encodeURIComponent(dataExtensionKey)}/rowset`;
+    
+    // Build the keys and values for the upsert
+    // fieldMappings already contains resolved values from Journey Builder
+    const keys = {
+        [primaryKeyField]: fieldMappings[primaryKeyField]
+    };
+    
+    const rowsetPayload = [
+        {
+            keys: keys,
+            values: fieldMappings
+        }
+    ];
+
+    console.log('Upserting to DE:', JSON.stringify(rowsetPayload, null, 2));
+
+    await axios.post(url, rowsetPayload, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        }
+    });
 }
 
 /*
  * GET Handler for /journeys route
  */
 exports.getJourneys = async function (req, res) {
-    try {
-        const token = await retrieveToken();
-        const journeys = await fetchJourneys(token);
-        res.status(200).json(journeys);
-    } catch (error) {
-        console.error('Error retrieving journeys:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
+    res.status(404).json({ error: 'Not implemented in DE copy mode' });
 }
 
 /*
  * Function to retrieve journeys
  */
-async function fetchJourneys(token) {
-    const journeysUrl = `${process.env.restBaseURL}/interaction/v1/interactions/`;
-
-    try {
-        const response = await axios.get(journeysUrl, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching journeys:', error);
-        throw error;
-    }
+async function fetchJourneys() {
+    throw new Error('Not implemented');
 }
 
 /*
  * Handler to get activity data by UUID
  */
 exports.getActivityByUUID = async function (req, res) {
-    const uuid = req.params.uuid;
-
-    const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-        ssl: {
-            rejectUnauthorized: false
-        }
-    });
-
-    await client.connect();
-
-    const query = 'SELECT * FROM activity_data WHERE uuid = $1';
-    const values = [uuid];
-
-    try {
-        const result = await client.query(query, values);
-        if (result.rows.length > 0) {
-            res.json(result.rows); // Return all matching rows
-        } else {
-            res.status(404).send('Activity not found');
-        }
-    } catch (err) {
-        console.error('Error retrieving activity data from database:', err.stack);
-        res.status(500).send('Internal Server Error');
-    } finally {
-        await client.end();
-    }
+    res.status(404).send('Not implemented in DE copy mode');
 }
 
 
 /*
  * Function to save data to the database
  */
-async function saveToDatabase(data) {
-    const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-        ssl: {
-            rejectUnauthorized: false
-        }
-    });
-
-    await client.connect();
-
-    // Ensure the table exists
-    await client.query(`
-        CREATE TABLE IF NOT EXISTS activity_data (
-            id SERIAL PRIMARY KEY,
-            uuid VARCHAR(36) NOT NULL,
-            contact_key VARCHAR(255) NOT NULL,
-            trigger_date TIMESTAMP NOT NULL,
-            status VARCHAR(50) NOT NULL,
-            error_log TEXT
-        )
-    `);
-
-    const query = 'INSERT INTO activity_data(uuid, contact_key, trigger_date, status, error_log) VALUES($1, $2, $3, $4, $5)';
-    const values = [data.uuid, data.contactKey, data.triggerDate, data.status, data.errorLog];
-
-    try {
-        await client.query(query, values);
-    } catch (err) {
-        console.error('Error saving data to database:', err.stack);
-    } finally {
-        await client.end();
-    }
+async function saveToDatabase() {
+    return;
 }
