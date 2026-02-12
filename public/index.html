@@ -1,9 +1,23 @@
-<!-- Example snippet for public/index.html -->
-<div id="step1" class="step">
-    <h3>Map Data Transfer</h3>
-    <label for="sourceField">Source Field (from Entry DE):</label>
-    <select id="sourceField" class="form-control"></select>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Custom Journey Activity</title>
+    <!-- Include jQuery and Postmonger -->
+    <script type="text/javascript" src="https://ajax.googleapis.com"></script>
+    <script type="text/javascript" src="js/postmonger.js"></script>
+</head>
+<body>
+    <div id="step1" class="step">
+        <h3>Map Data Transfer</h3>
+        <label for="sourceField">Source Field (from Entry DE):</label>
+        <select id="sourceField" class="form-control"></select>
 
-    <label for="destinationDE">Destination DE External Key:</label>
-    <input type="text" id="destinationDE" class="form-control" placeholder="Enter External Key">
-</div>
+        <label for="destinationDE">Destination DE External Key:</label>
+        <input type="text" id="destinationDE" class="form-control" placeholder="Enter External Key">
+    </div>
+
+    <!-- Load your custom logic last -->
+    <script type="text/javascript" src="js/test.js"></script>
+</body>
+</html>
