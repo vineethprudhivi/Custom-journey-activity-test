@@ -1,34 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Custom Activity UI</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com">
-    <script src="https://code.jquery.com"></script>
-    <script src="js/postmonger.js"></script>
-    <script src="js/customActivity.js"></script>
-    <style>
-        body { padding: 20px; background-color: #fff; }
-        .slds-select { margin-top: 5px; margin-bottom: 15px; }
-    </style>
-</head>
-<body>
-    <div id="step1" class="step">
-        <h2 class="slds-text-heading_medium">Map DE1 to Target DE</h2>
-        <p class="slds-m-bottom_medium">Select source fields for each target column:</p>
+<!-- Example snippet for public/index.html -->
+<div id="step1" class="step">
+    <h3>Map Data Transfer</h3>
+    <label for="sourceField">Source Field (from Entry DE):</label>
+    <select id="sourceField" class="form-control"></select>
 
-        <label class="slds-form-element__label">Target: <b>id</b> (PK)</label>
-        <select id="map-id" class="slds-select dynamic-select"><option value="">-- Select Source Field --</option></select>
-
-        <label class="slds-form-element__label">Target: <b>fname</b></label>
-        <select id="map-fname" class="slds-select dynamic-select"><option value="">-- Select Source Field --</option></select>
-
-        <label class="slds-form-element__label">Target: <b>lname</b></label>
-        <select id="map-lname" class="slds-select dynamic-select"><option value="">-- Select Source Field --</option></select>
-
-        <label class="slds-form-element__label">Target: <b>email</b></label>
-        <select id="map-email" class="slds-select dynamic-select"><option value="">-- Select Source Field --</option></select>
-    </div>
-<script src="/js/test.js"></script>
-</body>
-</html>
+    <label for="destinationDE">Destination DE External Key:</label>
+    <input type="text" id="destinationDE" class="form-control" placeholder="Enter External Key">
+</div>
