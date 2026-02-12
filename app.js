@@ -39,6 +39,19 @@ app.get('/', routes.index);
 app.post('/login', routes.login);
 app.post('/logout', routes.logout);
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        env: {
+            hasClientId: !!process.env.CLIENT_ID,
+            hasClientSecret: !!process.env.CLIENT_SECRET,
+            hasSubdomain: !!process.env.SUBDOMAIN
+        }
+    });
+});
+
 // Custom Routes for MC
 app.post('/journeybuilder/save/', activity.save);
 app.post('/journeybuilder/validate/', activity.validate);
@@ -61,8 +74,14 @@ app.get('/journeys', activity.getJourneys);
 // New route to get activity data by UUID
 app.get('/activity/:uuid', activity.getActivityByUUID);
 
-http.createServer(app).listen(
-  app.get('port'), function(){
-    console.log('Express server listening on port ' + app.get('port'));
-  }
-);
+// Start server locally, or export for Vercel
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  http.createServer(app).listen(
+    app.get('port'), function(){
+      console.log('Express server listening on port ' + app.get('port'));
+    }
+  );
+}
+
+// Export for Vercel
+module.exports = app;
