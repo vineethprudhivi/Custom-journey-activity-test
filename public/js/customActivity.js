@@ -3,12 +3,9 @@ define(['postmonger'], function (Postmonger) {
 
     var connection = new Postmonger.Session();
     var payload = {};
-    var schema = {};
-    var journeys = [];
-    var currentApiEventKey = null;
-    var entrySourceData = [];
-    var apiEventKeyMap = {}; // Map to store apiEventKey for each journey
-    var uniqueId = null; // Declare the uniqueId variable
+    var schema = [];
+
+    var TARGET_FIELDS = ['id', 'fname', 'lname', 'email'];
 
     $(window).ready(onRender);
     connection.on('initActivity', initialize);
@@ -18,68 +15,36 @@ define(['postmonger'], function (Postmonger) {
         connection.trigger('ready');
         connection.trigger('requestTokens');
         connection.trigger('requestEndpoints');
+        connection.trigger('requestSchema');
     }
-
-    connection.trigger('requestTriggerEventDefinition');
-    connection.on('requestedTriggerEventDefinition', function (eventDefinitionModel) {
-        if (eventDefinitionModel) {
-            currentApiEventKey = eventDefinitionModel.eventDefinitionKey;
-        }
-    });
 
     function initialize(data) {
         if (data) {
             payload = data;
         }
 
-        // Check if the uuid already exists in the payload
-        if (payload.arguments && payload.arguments.execute && payload.arguments.execute.inArguments) {
-            var inArguments = payload.arguments.execute.inArguments[0];
-            if (inArguments.uuid) {
-                uniqueId = inArguments.uuid;
-            } else {
-                uniqueId = UUIDjs.create().toString(); // Generate a new unique identifier
-            }
-        } else {
-            uniqueId = UUIDjs.create().toString(); // Generate a new unique identifier
-        }
-
-        connection.trigger('requestSchema');
         connection.on('requestedSchema', function (data) {
-            schema = data['schema'];
-            entrySourceData = addEntrySourceAttributesToInArguments(schema);
+            schema = (data && data.schema) ? data.schema : [];
+            populateSourceFieldDropdowns(schema);
+            hydrateFromExistingPayload();
         });
 
-        var hasInArguments = Boolean(
-            payload.arguments &&
-            payload.arguments.execute &&
-            payload.arguments.execute.inArguments &&
-            payload.arguments.execute.inArguments.length > 0
-        );
-
-        var inArguments = hasInArguments ? payload.arguments.execute.inArguments : [];
-
-        var selectedJourneyId = null;
-        if (inArguments.length > 0) {
-            selectedJourneyId = inArguments[0].selectedJourneyId;
-        }
-
-        fetchJourneys(selectedJourneyId);
+        connection.trigger('requestSchema');
     }
 
     function save() {
-        var selectedJourneyId = $('input[name="journey"]:checked').val();
-        var selectedApiEventKey = apiEventKeyMap[selectedJourneyId]; // Retrieve the apiEventKey from the map
-        var selectedJourneyName = $('input[name="journey"]:checked').closest('label').text().trim();
-        
+        var targetDEKey = ($('#target-de-key').val() || '').trim();
+
+        var values = {};
+        TARGET_FIELDS.forEach(function (targetField) {
+            var selectedSchemaKey = $(`#map-${targetField}`).val();
+            values[targetField] = selectedSchemaKey ? `{{${selectedSchemaKey}}}` : null;
+        });
+
         payload.arguments.execute.inArguments = [
             {
-                contactKey: '{{Contact.Key}}',
-                selectedJourneyId: selectedJourneyId || null,
-                selectedJourneyAPIEventKey: selectedApiEventKey || null,
-                selectedJourneyName: selectedJourneyName || 'No journey selected',
-                payload: entrySourceData,
-                uuid: uniqueId // Use the existing or new unique identifier
+                targetDEKey: targetDEKey || null,
+                values: values
             }
         ];
 
@@ -87,74 +52,50 @@ define(['postmonger'], function (Postmonger) {
         connection.trigger('updateActivity', payload);
     }
 
-    function fetchJourneys(selectedJourneyId = null) {
-        $.ajax({
-            url: '/journeys',
-            type: 'GET',
-            beforeSend: function() {
-                $('#loading-message').show();
-                $('#journey-radios').hide();
-            },
-            success: function (response) {
-                journeys = response.items.filter(journey => {
-                    if (journey.defaults && journey.defaults.email) {
-                        let apiEventEmail = journey.defaults.email.find(email => email.includes('APIEvent'));
-                        if (apiEventEmail) {
-                            let apiEventKey = apiEventEmail.match(/APIEvent-([a-z0-9-]+)/)[0];
-                            apiEventKeyMap[journey.id] = apiEventKey; // Store the apiEventKey in the map
-                            return apiEventKey !== currentApiEventKey;
-                        }
-                    }
-                    return false;
-                });
+    function populateSourceFieldDropdowns(schema) {
+        var keys = (schema || [])
+            .map(function (s) { return s && s.key; })
+            .filter(Boolean);
 
-                if (journeys.length === 0) {
-                    $('#loading-message').text('No journeys with API Event entry source were found.');
-                } else {
-                    populateJourneys(journeys, selectedJourneyId);
-                    $('#loading-message').hide();
-                    $('#journey-radios').show();
-                }
-            },
-            error: function (xhr, status, error) {
-                console.error('Error fetching journeys:', error);
-                $('#loading-message').text('Error loading journeys. Please try again.');
+        TARGET_FIELDS.forEach(function (targetField) {
+            var $select = $(`#map-${targetField}`);
+            if ($select.length === 0) {
+                return;
             }
-        });
-    }
 
-    function populateJourneys(journeys, selectedJourneyId = null) {
-        var $radioGroup = $('#journey-radios');
-        $radioGroup.empty();
+            // Preserve the initial placeholder option.
+            $select.find('option').not(':first').remove();
 
-        journeys.forEach(function (journey) {
-            var apiEventKey = apiEventKeyMap[journey.id];
-            var $radio = $('<input>', {
-                type: 'radio',
-                name: 'journey',
-                value: journey.id,
-                'data-api-event-key': apiEventKey // Add apiEventKey as a data attribute
+            keys.forEach(function (key) {
+                $select.append($('<option>', { value: key, text: key }));
             });
-
-            if (journey.id === selectedJourneyId) {
-                $radio.prop('checked', true);
-            }
-
-            $radioGroup.append(
-                $('<label>', {
-                    text: journey.name
-                }).prepend($radio)
-            );
         });
     }
 
-    function addEntrySourceAttributesToInArguments(schema) {
-        var data = {};
-        for (var i = 0; i < schema.length; i++) {
-            let attr = schema[i].key;
-            let keyIndex = attr.lastIndexOf('.') + 1;
-            data[attr.substring(keyIndex)] = `{{${attr}}}`;
+    function hydrateFromExistingPayload() {
+        var existing = payload && payload.arguments && payload.arguments.execute && payload.arguments.execute.inArguments;
+        if (!existing || existing.length === 0) {
+            return;
         }
-        return data;
+
+        var args = existing[0] || {};
+        if (args.targetDEKey) {
+            $('#target-de-key').val(args.targetDEKey);
+        }
+
+        var values = args.values || {};
+        TARGET_FIELDS.forEach(function (targetField) {
+            var v = values[targetField];
+            if (!v || typeof v !== 'string') {
+                return;
+            }
+
+            // values are stored as "{{Schema.Key}}"; convert back to Schema.Key
+            var m = v.match(/^\{\{(.+)\}\}$/);
+            var schemaKey = m ? m[1] : null;
+            if (schemaKey) {
+                $(`#map-${targetField}`).val(schemaKey);
+            }
+        });
     }
 });
