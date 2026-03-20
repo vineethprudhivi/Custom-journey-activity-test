@@ -52,6 +52,7 @@
     },
     "userInterfaces": {
         "configModal": {
+            "url": "index.html",
             "height": 600,
             "width": 700,
             "fullscreen": false
