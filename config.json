@@ -19,14 +19,14 @@
         "execute": {
             "inArguments": [],
             "outArguments": [],
-            "url": "https://customactivity1.netlify.app/journeybuilder/execute"
+            "url": "https://custom-journey-activity-test.vercel.app/execute"
         }
     },
     "configurationArguments": {
-        "applicationExtensionKey": "af850a11-4c0f-4091-a25e-3e619f27070e",
-        "save": { "url": "https://customactivity1.netlify.app/journeybuilder/save", "verb": "POST" },
-        "publish": { "url": "https://customactivity1.netlify.app/journeybuilder/publish", "verb": "POST" },
-        "validate": { "url": "https://customactivity1.netlify.app/journeybuilder/validate", "verb": "POST" }
+        "applicationExtensionKey": "b43b4e9f-6ebd-4f4c-9649-38bb36b7124b",
+        "save": { "url": "https://custom-journey-activity-test.vercel.app/save", "verb": "POST" },
+        "publish": { "url": "https://custom-journey-activity-test.vercel.app/publish", "verb": "POST" },
+        "validate": { "url": "https://custom-journey-activity-test.vercel.app/validate", "verb": "POST" }
     },
     "userInterfaces": {
         "configInspector": {
