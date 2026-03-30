@@ -28,7 +28,7 @@
         }
     },
     "configurationArguments": {
-        "applicationExtensionKey": "f0a0b74e-42ef-48ff-a51a-718a7e84d90f",
+         "applicationExtensionKey": "f0a0b74e-42ef-48ff-a51a-718a7e84d90f a",
         "save": {
             "url": "https://custom-journey-activity-test.vercel.app/save",
             "verb": "POST",
